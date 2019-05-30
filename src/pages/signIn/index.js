@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
 import { StatusBar } from 'react-native';
+import AsyncStorage from '@react-native-community/async-storage';
 import { StackActions, NavigationActions } from 'react-navigation';
 
 import api from '../../services/api';
@@ -30,8 +31,8 @@ export default class SignIn extends Component {
   };
 
   state = {
-    email: 'cso@email.com',
-    password: '123456',
+    email: '',
+    password: '',
     error: '',
   };
 
@@ -57,6 +58,8 @@ export default class SignIn extends Component {
           password: this.state.password,
         });
 
+        await AsyncStorage.setItem('@RaDopApp:token', response.data.token);
+
         const resetAction = StackActions.reset({
           index: 0,
           actions: [
@@ -76,7 +79,7 @@ export default class SignIn extends Component {
         <StatusBar hidden />
         <Logo source={require('../../images/radar.png')} resizeMode="contain" />
         <Input
-          placeholder="Endereço de e-mail"
+          placeholder="Endereço de E-mail"
           value={this.state.email}
           onChangeText={this.handleEmailChange}
           autoCapitalize="none"
@@ -95,7 +98,7 @@ export default class SignIn extends Component {
           <ButtonText>Entrar</ButtonText>
         </Button>
         <SignUpLink onPress={this.handleCreateAccountPress}>
-          <SignUpLinkText>Criar conta grátis</SignUpLinkText>
+          <SignUpLinkText>Criar conta</SignUpLinkText>
         </SignUpLink>
       </Container>
     );

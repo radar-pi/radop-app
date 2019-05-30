@@ -7,9 +7,12 @@
     "test": "jest"
   },
   "dependencies": {
+    "@mapbox/react-native-mapbox-gl": "git+https://github.com/nitaliano/react-native-mapbox-gl.git",
+    "@react-native-community/async-storage": "^1.4.2",
     "axios": "^0.18.0",
     "prop-types": "^15.7.2",
     "react": "16.8.3",
+    "react-dom": "^16.8.6",
     "react-native": "^0.59.8",
     "react-native-elements": "^1.1.0",
     "react-native-gesture-handler": "^1.2.1",
