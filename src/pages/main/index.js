@@ -1,10 +1,10 @@
 import React, { Component } from 'react';
 
-import { StatusBar, Modal, AsyncStorage } from 'react-native';
+import { Keyboard, StatusBar, Modal, AsyncStorage } from 'react-native';
 
 import MapboxGL from '@mapbox/react-native-mapbox-gl';
 
-import Geolocation from 'react-native-geolocation-service';
+import DateTimePicker from "react-native-modal-datetime-picker";
 
 import api from '../../services/api';
 
@@ -34,6 +34,7 @@ import {
   Form,
   Input,
 } from './styles';
+import { ScrollView } from 'react-native-gesture-handler';
 
 export default class Main extends Component {
   static navigationOptions = {
@@ -42,34 +43,24 @@ export default class Main extends Component {
 
   state = {
     locations: [],
-    mapRegion: null,
-    lastLat: null,
-    lastLong: null,
     statusModalOpened: false,
     newMaintenance: false,
     maintenancesModalOpened: false,
+    isDatePickerVisible: false,
+    isTimePickerVisible: false,
     maintenanceData: {
       user_id: '',
       date: '',
       time: '',
       reason: '',
-      radar_id: ''
+      radar_id: '',
+      latitude: -15.989312,
+      longitude: -48.045151,
     }
   };
   
   componentDidMount() {
     this.getLocation();
-    Geolocation.getCurrentPosition( (position) => {
-      this.state.lastLat = position.coords.latitude
-      this.state.lastLong = position.coords.longitude
-    }, (error) => {
-      console.log(error.code, error.message)
-    },
-    {
-      enableHighAccuracy: true,
-      timeout: 15000,
-      maximumAge: 10000
-    });
   }
 
   getLocation = async () => {
@@ -94,12 +85,93 @@ export default class Main extends Component {
     maintenancesModalOpened: !this.state.maintenancesModalOpened
   })
 
-  getRadarData = (location) => this.setState({
-    maintenanceData: {
-      user_id: '',
-      radar_id: location.id
-    }
-  })
+  handleGetRadarPress = (location) => {
+    this.setState({
+      maintenancesModalOpened: true,
+      maintenanceData: {
+        ...this.state.maintenanceData,
+        radar_id: location.id,
+        user_id: 1
+      }
+    });
+  }
+
+  handleMaintenanceDateChange = date => {
+    const { maintenanceData } = this.state;
+    this.setState({
+      maintenanceData: {
+        ...maintenanceData,
+        date
+      }
+    });
+  }
+
+  handleMaintenanceTimeChange = time => {
+    const { maintenanceData } = this.state;
+    this.setState({
+      maintenanceData: {
+        ...maintenanceData,
+        time
+      }
+    });
+  }
+
+  handleMaintenanceReasonChange = reason => {
+    const { maintenanceData } = this.state;
+    this.setState({
+      maintenanceData: {
+        ...maintenanceData,
+        reason
+      }
+    });
+  }
+
+  saveMaintenance = async () => {}
+
+  showDatePicker = () => {
+    Keyboard.dismiss()
+    this.setState({ isDatePickerVisible: true })
+  }
+
+  hideDatePicker = () => {
+    this.setState({ isDatePickerVisible: false })
+  }
+
+  handleDatePicked = date => {
+    const { maintenanceData } = this.state;
+    const day = date.getDate()
+    const month = ('0' + (date.getMonth() + 1)).slice(-2)
+    const year = date.getFullYear()
+    this.setState({
+      maintenanceData: {
+        ...maintenanceData,
+        date: day + '/' + month + '/' + year,
+      }
+    });
+    this.hideDatePicker()
+  }
+
+  showTimePicker = () => {
+    Keyboard.dismiss()
+    this.setState({ isTimePickerVisible: true })
+  }
+
+  hideTimePicker = () => {
+    this.setState({ isTimePickerVisible: false })
+  }
+
+  handleTimePicked = time => {
+    const { maintenanceData } = this.state;
+    const hour = ('0' + time.getHours()).slice(-2)
+    const minutes = ('0' + time.getMinutes()).slice(-2)
+    this.setState({
+      maintenanceData: {
+        ...maintenanceData,
+        time: hour + ':' + minutes,
+      }
+    });
+    this.hideTimePicker()
+  }
 
   renderConditionalsButtons = () => (
     !this.state.newMaintenance ? (
@@ -108,7 +180,7 @@ export default class Main extends Component {
       </NewButtonContainer>
     ) : (
       <ButtonsWrapper>
-        <SelectButtonContainer onPress={this.handleGetPositionPress}>
+        <SelectButtonContainer onPress={this.handleGetRadarPress}>
           <ButtonText>Selecione o radar</ButtonText>
         </SelectButtonContainer>
         <CancelButtonContainer onPress={this.handleNewMaintenancePress}>
@@ -118,8 +190,8 @@ export default class Main extends Component {
     )
   )
 
-  renderLocations = () => (
-    this.state.locations.map((location) => (
+  renderLocations = (locations) => (
+    locations.map((location) => (
       <MapboxGL.PointAnnotation
         id={location.id.toString()}
         coordinate={[parseFloat(location.longitude), parseFloat(location.latitude)]}
@@ -142,10 +214,10 @@ export default class Main extends Component {
     >
       <ModalContainer>
         <ModalContainer>
-          {/* <MapboxGL.MapView
+          <MapboxGL.MapView
             centerCoordinate={[
-              this.state.maintenanceData.location.longitude,
-              this.state.maintenanceData.location.latitude
+              this.state.maintenanceData.longitude,
+              this.state.maintenanceData.latitude
             ]}
             style={{ flex: 1 }}
             styleURL={MapboxGL.StyleURL.Dark}
@@ -153,34 +225,56 @@ export default class Main extends Component {
             <MapboxGL.PointAnnotation
               id="center"
               coordinate={[
-                this.state.realtyData.location.longitude,
-                this.state.realtyData.location.latitude
+                this.state.maintenanceData.longitude,
+                this.state.maintenanceData.latitude
               ]}
             >
               <MarkerContainer>
                 <MarkerLabel />
               </MarkerContainer>
             </MapboxGL.PointAnnotation>
-          </MapboxGL.MapView> */}
+          </MapboxGL.MapView>
         </ModalContainer>
-        <Form>
-          <Input
-            placeholder="Nome do Imóvel"
-            value={this.state.name}
-            onChangeText={this.handleNameChange}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          
-        </Form>
-        <DataButtonsWrapper>
-          <SelectButtonContainer>
-            <ButtonText>Salvar Manutenção</ButtonText>
-          </SelectButtonContainer>
-          <CancelButtonContainer onPress={this.handleDataModalClose}>
-            <ButtonText>Cancelar</ButtonText>
-          </CancelButtonContainer>
-        </DataButtonsWrapper>
+        <ScrollView>
+          <Form>
+            <Input
+              placeholder="Data da Manutenção"
+              value={this.state.maintenanceData.date}
+              onFocus={this.showDatePicker}
+              onChangeText={this.handleMaintenanceDateChange}
+              autoCapitalize="none"
+              autoCorrect={false}
+              onPress={Keyboard.dismiss}
+            />
+            <Input
+              placeholder="Horário da Manutenção"
+              value={this.state.maintenanceData.time}
+              onFocus={this.showTimePicker}
+              onChangeText={this.handleMaintenanceTimeChange}
+              autoCapitalize="none"
+              autoCorrect={false}
+              onPress={Keyboard.dismiss}
+            />
+            <Input
+              multiline={true}
+              placeholder="Razão"
+              value={this.state.maintenanceData.reason}
+              onChangeText={this.handleMaintenanceReasonChange}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </Form>
+          <DataButtonsWrapper>
+            <SelectButtonContainer>
+              <ButtonText onPress={this.handleDataModalClose}>Salvar Manutenção</ButtonText>
+            </SelectButtonContainer>
+            <CancelButtonContainer style={{ 
+              marginBottom: 15
+              }} onPress={this.handleDataModalClose}>
+              <ButtonText>Cancelar</ButtonText>
+            </CancelButtonContainer>
+          </DataButtonsWrapper>
+        </ScrollView>
       </ModalContainer>
     </Modal>
   )
@@ -190,13 +284,26 @@ export default class Main extends Component {
       <Container>
         <StatusBar barStyle="dark-content" />
         <MapboxGL.MapView
-          centerCoordinate={[-48.0445082, -15.9889863]}
+          centerCoordinate={[-48.045151, -15.989312]}
           style={{ flex: 1 }}
           styleURL={MapboxGL.StyleURL.Dark}
         >
-          { this.renderLocations() }
+          { this.renderLocations(this.state.locations) }
         </MapboxGL.MapView>
         { this.renderConditionalsButtons() }
+        { this.renderDataModal() }
+        <DateTimePicker
+          isVisible={ this.state.isDatePickerVisible }
+          onConfirm={ this.handleDatePicked }
+          onCancel={ this.hideDatePicker }
+          mode={'date'}
+        />
+        <DateTimePicker
+          isVisible={ this.state.isTimePickerVisible }
+          onConfirm={ this.handleTimePicked }
+          onCancel={ this.hideTimePicker }
+          mode={'time'}
+        />
       </Container>
     );
   }

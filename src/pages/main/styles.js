@@ -109,25 +109,6 @@ const ContinueButtonText = styled.Text`
   fontWeight: bold;
 `;
 
-const TakePictureButtonContainer = styled.TouchableHighlight`
-  position: absolute;
-  alignSelf: center;
-  bottom: 20;
-  width: 60px;
-  height: 60px;
-  backgroundColor: #FFF;
-  borderRadius: 30px;
-  alignItems: center;
-  justifyContent: center;
-`;
-
-const TakePictureButtonLabel = styled.View`
-  width: 52px;
-  height: 52px;
-  borderRadius: 26px;
-  backgroundColor: #fc6663;
-`;
-
 const DataButtonsWrapper = styled.View`
   flex: 1;
   alignItems: center;
@@ -169,7 +150,6 @@ const Input = styled.TextInput`
   borderColor: #CCC;
 `;
 
-
 export {
   Container,
   AnnotationContainer,
@@ -188,8 +168,6 @@ export {
   CameraButtonContainer,
   CancelButtonText,
   ContinueButtonText,
-  TakePictureButtonContainer,
-  TakePictureButtonLabel,
   DataButtonsWrapper,
   MarkerContainer,
   MarkerLabel,
