@@ -59,6 +59,7 @@ export default class SignIn extends Component {
         });
 
         await AsyncStorage.setItem('@RaDopApp:token', response.data.token);
+        await AsyncStorage.setItem('@RaDopApp:user_email', this.state.email);
 
         const resetAction = StackActions.reset({
           index: 0,

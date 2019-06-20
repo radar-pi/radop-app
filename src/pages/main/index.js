@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
 
-import { Keyboard, StatusBar, Modal, AsyncStorage } from 'react-native';
+import { Keyboard, StatusBar, Modal } from 'react-native';
+
+import AsyncStorage from '@react-native-community/async-storage';
 
 import MapboxGL from '@mapbox/react-native-mapbox-gl';
 
@@ -61,6 +63,7 @@ export default class Main extends Component {
   
   componentDidMount() {
     this.getLocation();
+    this.getUser();
   }
 
   getLocation = async () => {
@@ -73,6 +76,26 @@ export default class Main extends Component {
       });
 
       this.setState({ locations: response.data });
+    } catch (err) {
+      console.log(err);
+      throw err;
+    }
+  }
+
+  getUser = async () => {
+    try {
+      const user_email = await AsyncStorage.getItem('@RaDopApp:user_email')
+      const response = await api.get('/user/find', {
+        params: {
+          email: user_email
+        },
+      });
+
+      const data = response.data
+      const id_user = data[0].id
+      this.setState({maintenanceData: {
+        user_id: id_user
+      }});
     } catch (err) {
       console.log(err);
       throw err;
