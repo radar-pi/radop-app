@@ -85,13 +85,17 @@ export default class SignIn extends Component {
           onChangeText={this.handleEmailChange}
           autoCapitalize="none"
           autoCorrect={false}
+          returnKeyType="done"
         />
         <Input
+          label={'password'}
           placeholder="Senha"
           value={this.state.password}
           onChangeText={this.handlePasswordChange}
           autoCapitalize="none"
           autoCorrect={false}
+          returnKeyType="go"
+          onSubmitEditing={this.handleSignInPress}
           secureTextEntry
         />
         {this.state.error.length !== 0 && <ErrorMessage>{this.state.error}</ErrorMessage>}

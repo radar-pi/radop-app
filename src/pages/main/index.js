@@ -1,6 +1,11 @@
 import React, { Component } from 'react';
 
-import { Keyboard, StatusBar, Modal } from 'react-native';
+import {
+  Keyboard,
+  StatusBar,
+  Modal,
+  ActivityIndicator
+} from 'react-native';
 
 import AsyncStorage from '@react-native-community/async-storage';
 
@@ -21,9 +26,6 @@ import {
   ButtonText,
   Marker,
   ModalContainer,
-  ModalImagesListContainer,
-  ModalImagesList,
-  ModalImageItem,
   ModalButtons,
   CameraButtonContainer,
   CancelButtonText,
@@ -50,14 +52,14 @@ export default class Main extends Component {
     maintenancesModalOpened: false,
     isDatePickerVisible: false,
     isTimePickerVisible: false,
+    latitude: 0.0,
+    longitude: 0.0,
     maintenanceData: {
       user_id: '',
       date: '',
       time: '',
       reason: '',
       radar_id: '',
-      latitude: -15.989312,
-      longitude: -48.045151,
     }
   };
   
@@ -77,7 +79,7 @@ export default class Main extends Component {
 
       this.setState({ locations: response.data });
     } catch (err) {
-      console.log(err);
+      console.error(err);
       throw err;
     }
   }
@@ -97,7 +99,7 @@ export default class Main extends Component {
         user_id: id_user
       }});
     } catch (err) {
-      console.log(err);
+      console.error(err);
       throw err;
     }
   }
@@ -109,14 +111,23 @@ export default class Main extends Component {
   })
 
   handleGetRadarPress = (location) => {
-    this.setState({
-      maintenancesModalOpened: true,
-      maintenanceData: {
-        ...this.state.maintenanceData,
-        radar_id: location.id,
-        user_id: 1
-      }
-    });
+    let { id, latitude, longitude } = location
+    if (this.state.newMaintenance) {
+      this.setState({
+        latitude: parseFloat(latitude),
+        longitude: parseFloat(longitude),
+        maintenanceData: {
+          ...this.state.maintenanceData,
+          radar_id: id,
+        }
+      });
+    } else {
+      console.log('I was here!')
+    }
+  }
+
+  handleSelectedRadarMaintenecePress = () => {
+    this.setState({ maintenancesModalOpened: !this.state.maintenancesModalOpened })
   }
 
   handleMaintenanceDateChange = date => {
@@ -149,7 +160,39 @@ export default class Main extends Component {
     });
   }
 
-  saveMaintenance = async () => {}
+  saveMaintenance = async () => {
+    try {
+      const {user_id, radar_id, time, reason} = this.state.maintenanceData
+      let { date } = this.state.maintenanceData
+
+      const response = await api.post('/maintenances', {
+        user_id: user_id,
+        date: date.split('/').reverse().join('/'),
+        time: time,
+        reason: reason,
+        radar_id: radar_id,
+      });
+
+      console.log(response.data)
+      
+      this.setState({
+        latitude: 0.0,
+        longitude: 0.0,      
+        maintenanceData: {
+          date: '',
+          time: '',
+          reason: '',
+          radar_id: '',
+        },
+        newMaintenance: !this.state.newMaintenance,
+        maintenancesModalOpened: false
+      });
+    
+    } catch (err) {
+      console.error(err)
+      throw err
+    }
+  }
 
   showDatePicker = () => {
     Keyboard.dismiss()
@@ -203,7 +246,7 @@ export default class Main extends Component {
       </NewButtonContainer>
     ) : (
       <ButtonsWrapper>
-        <SelectButtonContainer onPress={this.handleGetRadarPress}>
+        <SelectButtonContainer onPress={this.handleSelectedRadarMaintenecePress}>
           <ButtonText>Selecione o radar</ButtonText>
         </SelectButtonContainer>
         <CancelButtonContainer onPress={this.handleNewMaintenancePress}>
@@ -219,6 +262,7 @@ export default class Main extends Component {
         id={location.id.toString()}
         coordinate={[parseFloat(location.longitude), parseFloat(location.latitude)]}
         key={location.id}
+        onSelected={() => this.handleGetRadarPress(location)}
       >
         <AnnotationContainer>
           <AnnotationText>{location.id}: {location.name}</AnnotationText>
@@ -228,7 +272,7 @@ export default class Main extends Component {
     ))
   )
 
-  renderDataModal = () => (
+  renderMaintenanceModal = () => (
     <Modal
       visible={this.state.maintenancesModalOpened}
       transparent={false}
@@ -239,8 +283,8 @@ export default class Main extends Component {
         <ModalContainer>
           <MapboxGL.MapView
             centerCoordinate={[
-              this.state.maintenanceData.longitude,
-              this.state.maintenanceData.latitude
+              this.state.longitude,
+              this.state.latitude
             ]}
             style={{ flex: 1 }}
             styleURL={MapboxGL.StyleURL.Dark}
@@ -248,8 +292,8 @@ export default class Main extends Component {
             <MapboxGL.PointAnnotation
               id="center"
               coordinate={[
-                this.state.maintenanceData.longitude,
-                this.state.maintenanceData.latitude
+                this.state.longitude,
+                this.state.latitude
               ]}
             >
               <MarkerContainer>
@@ -287,9 +331,13 @@ export default class Main extends Component {
               autoCorrect={false}
             />
           </Form>
+          {/* <ActivityIndicator
+            size="large"
+            color="#0000ff"
+          /> */}
           <DataButtonsWrapper>
-            <SelectButtonContainer>
-              <ButtonText onPress={this.handleDataModalClose}>Salvar Manutenção</ButtonText>
+            <SelectButtonContainer onPress={this.saveMaintenance}>
+              <ButtonText>Salvar Manutenção</ButtonText>
             </SelectButtonContainer>
             <CancelButtonContainer style={{ 
               marginBottom: 15
@@ -314,7 +362,7 @@ export default class Main extends Component {
           { this.renderLocations(this.state.locations) }
         </MapboxGL.MapView>
         { this.renderConditionalsButtons() }
-        { this.renderDataModal() }
+        { this.renderMaintenanceModal() }
         <DateTimePicker
           isVisible={ this.state.isDatePickerVisible }
           onConfirm={ this.handleDatePicked }
