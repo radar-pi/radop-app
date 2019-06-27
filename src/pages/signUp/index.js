@@ -97,6 +97,7 @@ export default class SignUp extends Component {
           onChangeText={this.handleUsernameChange}
           autoCapitalize="none"
           autoCorrect={false}
+          returnKeyType="next"
         />
         <Input
           placeholder="Endereço de e-mail"
@@ -104,6 +105,7 @@ export default class SignUp extends Component {
           onChangeText={this.handleEmailChange}
           autoCapitalize="none"
           autoCorrect={false}
+          returnKeyType="next"
         />
         <Input
           placeholder="Senha"
@@ -111,6 +113,8 @@ export default class SignUp extends Component {
           onChangeText={this.handlePasswordChange}
           autoCapitalize="none"
           autoCorrect={false}
+          returnKeyType="go"
+          onSubmitEditing={this.handleSignUpPress}
           secureTextEntry
         />
         {this.state.error.length !== 0 && <ErrorMessage>{this.state.error}</ErrorMessage>}

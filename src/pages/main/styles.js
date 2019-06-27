@@ -19,6 +19,13 @@ const AnnotationText = styled.Text`
   color: #fff;
 `;
 
+const DialogText = styled.Text`
+  fontSize: 14px;
+  alignItems: center;
+  justifyContent: center;
+  marginTop: 14px;
+`;
+
 const NewButtonContainer = styled.TouchableHighlight`
   position: absolute;
   bottom: 54;
@@ -150,10 +157,18 @@ const Input = styled.TextInput`
   borderColor: #CCC;
 `;
 
+const List = styled.FlatList.attrs({
+  contentContainerStyle: { paddingHorizontal: 20},
+  showsVerticalScrollIndicator: false,
+})`
+  margin-top: 20px
+`;
+
 export {
   Container,
   AnnotationContainer,
   AnnotationText,
+  DialogText,
   NewButtonContainer,
   ButtonsWrapper,
   CancelButtonContainer,
@@ -173,4 +188,5 @@ export {
   MarkerLabel,
   Form,
   Input,
+  List
 };

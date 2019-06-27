@@ -85,7 +85,7 @@ export default class SignIn extends Component {
           onChangeText={this.handleEmailChange}
           autoCapitalize="none"
           autoCorrect={false}
-          returnKeyType="done"
+          returnKeyType="next"
         />
         <Input
           label={'password'}

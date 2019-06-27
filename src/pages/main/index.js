@@ -4,8 +4,16 @@ import {
   Keyboard,
   StatusBar,
   Modal,
-  ActivityIndicator
 } from 'react-native';
+
+import {
+  Dialog,
+  SlideAnimation,
+  DialogContent,
+  DialogFooter,
+  DialogButton,
+  DialogTitle,
+} from 'react-native-popup-dialog';
 
 import AsyncStorage from '@react-native-community/async-storage';
 
@@ -13,31 +21,29 @@ import MapboxGL from '@mapbox/react-native-mapbox-gl';
 
 import DateTimePicker from "react-native-modal-datetime-picker";
 
+import Status from '../../components/Status';
+
 import api from '../../services/api';
 
 import {
   Container,
   AnnotationContainer,
   AnnotationText,
+  DialogText,
   NewButtonContainer,
   ButtonsWrapper,
   CancelButtonContainer,
   SelectButtonContainer,
   ButtonText,
-  Marker,
   ModalContainer,
-  ModalButtons,
-  CameraButtonContainer,
-  CancelButtonText,
-  ContinueButtonText,
-  TakePictureButtonContainer,
-  TakePictureButtonLabel,
   DataButtonsWrapper,
   MarkerContainer,
   MarkerLabel,
   Form,
   Input,
+  List,
 } from './styles';
+
 import { ScrollView } from 'react-native-gesture-handler';
 
 export default class Main extends Component {
@@ -47,11 +53,14 @@ export default class Main extends Component {
 
   state = {
     locations: [],
+    status: [],
+    radar_name: '',
     statusModalOpened: false,
     newMaintenance: false,
     maintenancesModalOpened: false,
     isDatePickerVisible: false,
     isTimePickerVisible: false,
+    savedMaintenancePopup: false,
     latitude: 0.0,
     longitude: 0.0,
     maintenanceData: {
@@ -60,7 +69,8 @@ export default class Main extends Component {
       time: '',
       reason: '',
       radar_id: '',
-    }
+    },
+    savedMessage: '',
   };
   
   componentDidMount() {
@@ -104,25 +114,60 @@ export default class Main extends Component {
     }
   }
 
+  getStatus = async (radar_id) => {
+    try {
+      const response = await api.get(`/radar/${radar_id}/statuses`, {});
+
+      const data = response.data
+      data.forEach((element) => {
+        element['radar_name']=this.state.radar_name;
+      });
+      this.setState({
+        status: data
+      });
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  }
+
   handleNewMaintenancePress = () => this.setState({ newMaintenance: !this.state.newMaintenance })
 
-  handleDataModalClose = () => this.setState({
-    maintenancesModalOpened: !this.state.maintenancesModalOpened
-  })
+  handleDataModalClose = () => {
+    this.setState({
+      maintenancesModalOpened: !this.state.maintenancesModalOpened,
+      maintenanceData: {
+        date: '',
+        time: '',
+        reason: '',
+        radar_id: '',
+      },
+      newMaintenance: !this.state.newMaintenance
+    })
+    this.forceUpdate()
+  }
 
-  handleGetRadarPress = (location) => {
-    let { id, latitude, longitude } = location
+  handleStatusModalClose = () => this.setState({ statusModalOpened: !this.state.statusModalOpened })
+
+  handleGetRadarPress = async (location) => {
+    let { id, latitude, longitude, name } = location
     if (this.state.newMaintenance) {
       this.setState({
         latitude: parseFloat(latitude),
         longitude: parseFloat(longitude),
+        radar_name: name,
         maintenanceData: {
           ...this.state.maintenanceData,
           radar_id: id,
         }
       });
     } else {
-      console.log('I was here!')
+      this.setState({ radar_name: name })
+      await this.getStatus(id)
+      this.setState({
+        radar_name: name,
+        statusModalOpened: !this.state.statusModalOpened
+      })
     }
   }
 
@@ -165,16 +210,17 @@ export default class Main extends Component {
       const {user_id, radar_id, time, reason} = this.state.maintenanceData
       let { date } = this.state.maintenanceData
 
-      const response = await api.post('/maintenances', {
-        user_id: user_id,
-        date: date.split('/').reverse().join('/'),
-        time: time,
-        reason: reason,
-        radar_id: radar_id,
-      });
+      // const response = await api.post('/maintenances', {
+      //   user_id: user_id,
+      //   date: date.split('/').reverse().join('/'),
+      //   time: time,
+      //   reason: reason,
+      //   radar_id: radar_id,
+      // });
 
-      console.log(response.data)
-      
+      this.setState({
+        savedMessage: `A manutenção do radar ${this.state.radar_name} foi salva!`
+      })
       this.setState({
         latitude: 0.0,
         longitude: 0.0,      
@@ -184,9 +230,12 @@ export default class Main extends Component {
           reason: '',
           radar_id: '',
         },
+        savedMaintenancePopup: false,
         newMaintenance: !this.state.newMaintenance,
         maintenancesModalOpened: false
       });
+
+      this.setState({ savedMaintenancePopup: !this.state.savedMaintenancePopup })
     
     } catch (err) {
       console.error(err)
@@ -267,7 +316,7 @@ export default class Main extends Component {
         <AnnotationContainer>
           <AnnotationText>{location.id}: {location.name}</AnnotationText>
         </AnnotationContainer>
-        <MapboxGL.Callout title={location.name} />
+        <MapboxGL.Callout title={`Selecionado: \n${location.name}`} />
       </MapboxGL.PointAnnotation>
     ))
   )
@@ -331,10 +380,6 @@ export default class Main extends Component {
               autoCorrect={false}
             />
           </Form>
-          {/* <ActivityIndicator
-            size="large"
-            color="#0000ff"
-          /> */}
           <DataButtonsWrapper>
             <SelectButtonContainer onPress={this.saveMaintenance}>
               <ButtonText>Salvar Manutenção</ButtonText>
@@ -347,6 +392,31 @@ export default class Main extends Component {
           </DataButtonsWrapper>
         </ScrollView>
       </ModalContainer>
+    </Modal>
+  )
+
+  renderStatusModal = () => (
+    <Modal
+      visible={this.state.statusModalOpened}
+      transparent={false}
+      animationType="slide"
+      onRequestClose={this.handleStatusModalClose}
+    >
+      <ModalContainer>
+        <List
+          keyboardShouldPersistTaps="handled"
+          data={this.state.status}
+          keyExtractor={item => String(item.id)}
+          renderItem={({ item }) => (
+            <Status data={ item } />
+          )}
+        />
+      </ModalContainer>
+      <DataButtonsWrapper>
+        <CancelButtonContainer onPress={this.handleStatusModalClose}>
+          <ButtonText>Fechar</ButtonText>
+        </CancelButtonContainer>
+      </DataButtonsWrapper>
     </Modal>
   )
 
@@ -363,6 +433,7 @@ export default class Main extends Component {
         </MapboxGL.MapView>
         { this.renderConditionalsButtons() }
         { this.renderMaintenanceModal() }
+        { this.renderStatusModal() }
         <DateTimePicker
           isVisible={ this.state.isDatePickerVisible }
           onConfirm={ this.handleDatePicked }
@@ -375,6 +446,28 @@ export default class Main extends Component {
           onCancel={ this.hideTimePicker }
           mode={'time'}
         />
+        <Dialog
+          visible={this.state.savedMaintenancePopup}
+          dialogAnimation={new SlideAnimation({
+            slideFrom: 'bottom',
+          })}
+          footer={
+            <DialogFooter>
+              <DialogButton
+                text="OK"
+                onPress={() => {this.setState({ savedMaintenancePopup: false })}}
+              />
+              <DialogButton
+                style={{ display: 'none' }}
+              />
+            </DialogFooter>
+          }
+        >
+          <DialogTitle title='Manutenção'/>
+          <DialogContent>
+            <DialogText> { this.state.savedMessage } </DialogText>
+          </DialogContent>
+        </Dialog>
       </Container>
     );
   }
