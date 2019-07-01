@@ -22,6 +22,7 @@ import MapboxGL from '@mapbox/react-native-mapbox-gl';
 import DateTimePicker from "react-native-modal-datetime-picker";
 
 import Status from '../../components/Status';
+import Maintenance from '../../components/Maintenance';
 
 import api from '../../services/api';
 
@@ -30,7 +31,8 @@ import {
   AnnotationContainer,
   AnnotationText,
   DialogText,
-  NewButtonContainer,
+  ModalText,
+  TextContainer,
   ButtonsWrapper,
   CancelButtonContainer,
   SelectButtonContainer,
@@ -54,10 +56,13 @@ export default class Main extends Component {
   state = {
     locations: [],
     status: [],
+    maintenances: [],
     radar_name: '',
-    statusModalOpened: false,
     newMaintenance: false,
+    seeMaintenance: false,
+    statusModalOpened: false,
     maintenancesModalOpened: false,
+    maintenanceListModalOpened: false,
     isDatePickerVisible: false,
     isTimePickerVisible: false,
     savedMaintenancePopup: false,
@@ -131,7 +136,34 @@ export default class Main extends Component {
     }
   }
 
+  getMaintenance = async (radar_id) => {
+    try {
+      const response = await api.get(`/maintenances/radar/${radar_id}`, {});
+      console.log(response)
+      const data = response.data
+      data.forEach((element) => {
+        element['radar_name']=this.state.radar_name;
+      });
+      this.setState({
+        maintenances: data
+      })
+      console.log(this.state.maintenances)
+    } catch (err) {
+      console.error(err);
+      throw err
+    }
+  }
+
   handleNewMaintenancePress = () => this.setState({ newMaintenance: !this.state.newMaintenance })
+
+  handleMaintenanceListPress = () => this.setState({ seeMaintenance: !this.state.seeMaintenance })
+
+  handleMaintenanceCancelPress = () => {
+    this.setState({
+      newMaintenance: false,
+      seeMaintenance: false,
+    })
+  }
 
   handleDataModalClose = () => {
     this.setState({
@@ -147,7 +179,18 @@ export default class Main extends Component {
     this.forceUpdate()
   }
 
-  handleStatusModalClose = () => this.setState({ statusModalOpened: !this.state.statusModalOpened })
+  handleStatusModalClose = () => {
+    this.setState({
+      statusModalOpened: !this.state.statusModalOpened
+    })
+  }
+
+  handleMaintenanceListClose = () => {
+    this.setState({
+      seeMaintenance: !this.state.seeMaintenance,
+      maintenanceListModalOpened: !this.state.maintenanceListModalOpened
+    })
+  }
 
   handleGetRadarPress = async (location) => {
     let { id, latitude, longitude, name } = location
@@ -161,18 +204,26 @@ export default class Main extends Component {
           radar_id: id,
         }
       });
+    } else if (this.state.seeMaintenance) {
+      this.setState({ radar_name: name })
+      await this.getMaintenance(id)
     } else {
       this.setState({ radar_name: name })
       await this.getStatus(id)
       this.setState({
-        radar_name: name,
         statusModalOpened: !this.state.statusModalOpened
       })
     }
   }
 
-  handleSelectedRadarMaintenecePress = () => {
-    this.setState({ maintenancesModalOpened: !this.state.maintenancesModalOpened })
+  handleSelectedRadarMaintenancePress = () => {
+    if (this.state.newMaintenance) {
+      this.setState({ maintenancesModalOpened: !this.state.maintenancesModalOpened })
+    } else if (this.state.seeMaintenance) {
+      this.setState({ maintenanceListModalOpened: !this.state.maintenanceListModalOpened })
+    } else {
+      console.error('Error at handleSelectedRadarMaintenancePress!')
+    }
   }
 
   handleMaintenanceDateChange = date => {
@@ -210,13 +261,13 @@ export default class Main extends Component {
       const {user_id, radar_id, time, reason} = this.state.maintenanceData
       let { date } = this.state.maintenanceData
 
-      // const response = await api.post('/maintenances', {
-      //   user_id: user_id,
-      //   date: date.split('/').reverse().join('/'),
-      //   time: time,
-      //   reason: reason,
-      //   radar_id: radar_id,
-      // });
+      const response = await api.post('/maintenances', {
+        user_id: user_id,
+        date: date.split('/').reverse().join('/'),
+        time: time,
+        reason: reason,
+        radar_id: radar_id,
+      });
 
       this.setState({
         savedMessage: `A manutenção do radar ${this.state.radar_name} foi salva!`
@@ -289,16 +340,21 @@ export default class Main extends Component {
   }
 
   renderConditionalsButtons = () => (
-    !this.state.newMaintenance ? (
-      <NewButtonContainer onPress={this.handleNewMaintenancePress}>
-        <ButtonText>Nova Manutenção</ButtonText>
-      </NewButtonContainer>
+    (!this.state.newMaintenance && !this.state.seeMaintenance) ? (
+      <ButtonsWrapper>
+        <SelectButtonContainer onPress={this.handleMaintenanceListPress}>
+          <ButtonText>Ver Manutenções</ButtonText>
+        </SelectButtonContainer>
+        <CancelButtonContainer style={{ backgroundColor: '#fc6663' }} onPress={this.handleNewMaintenancePress}>
+          <ButtonText>Nova Manutenção</ButtonText>
+        </CancelButtonContainer>
+      </ButtonsWrapper>
     ) : (
       <ButtonsWrapper>
-        <SelectButtonContainer onPress={this.handleSelectedRadarMaintenecePress}>
-          <ButtonText>Selecione o radar</ButtonText>
+        <SelectButtonContainer onPress={this.handleSelectedRadarMaintenancePress}>
+          <ButtonText>Selecione o Radar</ButtonText>
         </SelectButtonContainer>
-        <CancelButtonContainer onPress={this.handleNewMaintenancePress}>
+        <CancelButtonContainer onPress={this.handleMaintenanceCancelPress}>
           <ButtonText>Cancelar</ButtonText>
         </CancelButtonContainer>
       </ButtonsWrapper>
@@ -403,6 +459,9 @@ export default class Main extends Component {
       onRequestClose={this.handleStatusModalClose}
     >
       <ModalContainer>
+        <TextContainer>
+          <ModalText>Status</ModalText>
+        </TextContainer>
         <List
           keyboardShouldPersistTaps="handled"
           data={this.state.status}
@@ -412,11 +471,38 @@ export default class Main extends Component {
           )}
         />
       </ModalContainer>
-      <DataButtonsWrapper>
-        <CancelButtonContainer onPress={this.handleStatusModalClose}>
+      <CancelButtonContainer 
+      style={{ marginBottom: 10, marginHorizontal: 20 }}
+      onPress={this.handleStatusModalClose}>
+        <ButtonText>Fechar</ButtonText>
+      </CancelButtonContainer>
+    </Modal>
+  )
+
+  renderMaintenanceListModal = () => (
+    <Modal
+      visible={this.state.maintenanceListModalOpened}
+      transparent={false}
+      animationType="slide"
+      onRequestClose={this.handleMaintenanceListClose}>
+        <TextContainer>
+          <ModalText>Manutenções</ModalText>
+        </TextContainer>
+        <ModalContainer>
+        <List
+          keyboardShouldPersistTaps="handled"
+          data={this.state.maintenances}
+          keyExtractor={item => String(item.id)}
+          renderItem={({ item }) => (
+            <Maintenance data={ item } />
+          )}
+        />
+        </ModalContainer>
+        <CancelButtonContainer
+        style={{ marginBottom: 10, marginHorizontal: 20 }}
+        onPress={this.handleMaintenanceListClose}>
           <ButtonText>Fechar</ButtonText>
         </CancelButtonContainer>
-      </DataButtonsWrapper>
     </Modal>
   )
 
@@ -434,6 +520,7 @@ export default class Main extends Component {
         { this.renderConditionalsButtons() }
         { this.renderMaintenanceModal() }
         { this.renderStatusModal() }
+        { this.renderMaintenanceListModal() }
         <DateTimePicker
           isVisible={ this.state.isDatePickerVisible }
           onConfirm={ this.handleDatePicked }

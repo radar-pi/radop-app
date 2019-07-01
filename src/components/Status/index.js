@@ -1,6 +1,7 @@
 import React from 'react';
 
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5'
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 import {
     Container,
@@ -37,11 +38,11 @@ export default function Status({ data }) {
                     <StatStatus>{this.defineText(data.camera)}</StatStatus>
                 </Stat>
                 <Stat>
-                    <FontAwesome5 name="raspberry-pi" size={22} color="#333" />
+                    <FontAwesome5 name="digital-tachograph" size={22} color="#333" />
                     <StatStatus>{this.defineText(data.rasp)}</StatStatus>
                 </Stat>
                 <Stat>
-                    <FontAwesome5 name="digital-tachograph" size={22} color="#333" />
+                    <Icon name="developer-board" size={22} color="#333" />
                     <StatStatus>{this.defineText(data.usrp)}</StatStatus>
                 </Stat>
             </Stats>

@@ -6,6 +6,19 @@ const Container = styled.View`
   flex: 1;
 `;
 
+const ModalText = styled.Text`
+  fontWeight: bold;
+  alignItems: center;
+  justifyContent: center;
+  fontSize: 28px;
+`;
+
+const TextContainer = styled.View`
+  paddingTop: 10px;
+  alignItems: center;
+  justifyContent: center;
+`;
+
 const AnnotationContainer = styled.View`
   alignItems: center;
   justifyContent: center;
@@ -118,8 +131,8 @@ const ContinueButtonText = styled.Text`
 
 const DataButtonsWrapper = styled.View`
   flex: 1;
-  alignItems: center;
-  justifyContent: center;
+  alignItems: flex-end;
+  justifyContent: flex-end;
   paddingHorizontal: 20px;
 `;
 
@@ -166,6 +179,8 @@ const List = styled.FlatList.attrs({
 
 export {
   Container,
+  ModalText,
+  TextContainer,
   AnnotationContainer,
   AnnotationText,
   DialogText,
