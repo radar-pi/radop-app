@@ -139,7 +139,6 @@ export default class Main extends Component {
   getMaintenance = async (radar_id) => {
     try {
       const response = await api.get(`/maintenances/radar/${radar_id}`, {});
-      console.log(response)
       const data = response.data
       data.forEach((element) => {
         element['radar_name']=this.state.radar_name;
@@ -147,7 +146,6 @@ export default class Main extends Component {
       this.setState({
         maintenances: data
       })
-      console.log(this.state.maintenances)
     } catch (err) {
       console.error(err);
       throw err
