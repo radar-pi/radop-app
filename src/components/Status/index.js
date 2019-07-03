@@ -30,15 +30,15 @@ export default function Status({ data }) {
             <Time>{data.time}</Time>
             <Stats>
                 <Stat>
-                    <FontAwesome5 name="broadcast-tower" size={22} color="#333" />
+                    <FontAwesome5 name="broadcast-tower" size={16} color="#333" />
                     <StatStatus>{this.defineText(data.radar)}</StatStatus>
                 </Stat>
                 <Stat>
-                    <FontAwesome5 name="camera" size={22} color="#333" />
+                    <FontAwesome5 name="camera" size={18} color="#333" />
                     <StatStatus>{this.defineText(data.camera)}</StatStatus>
                 </Stat>
                 <Stat>
-                    <FontAwesome5 name="digital-tachograph" size={22} color="#333" />
+                    <FontAwesome5 name="digital-tachograph" size={18} color="#333" />
                     <StatStatus>{this.defineText(data.rasp)}</StatStatus>
                 </Stat>
                 <Stat>
